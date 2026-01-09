@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nike B2B Constrained Optimization</title>
+    <script src="https://unpkg.com/javascript-lp-solver@0.4.24/prod/solver.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a24;
+            --accent-orange: #ff6b35;
+            --accent-orange-dim: #cc5529;
+            --accent-green: #10b981;
+            --accent-blue: #3b82f6;
+            --accent-purple: #667eea;
+            --text-primary: #f5f5f7;
+            --text-secondary: #a1a1aa;
+            --text-dim: #71717a;
+            --border: #27272a;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(ellipse at 20% 0%, rgba(255, 107, 53, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 100%, rgba(59, 130, 246, 0.06) 0%, transparent 50%);
+        }
+        
+        .container {
+            max-width: 1500px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .logo {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--accent-orange), var(--accent-orange-dim));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+        
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+        
+        h1 span {
+            color: var(--accent-orange);
+        }
+        
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 2rem;
+        }
+        
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+        }
+        
+        .card-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-secondary);
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .card-title::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: var(--accent-orange);
+            border-radius: 2px;
+        }
+        
+        .budget-input {
+            margin-bottom: 1rem;
+        }
+        
+        .budget-input label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .budget-input input, .budget-input select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        
+        .budget-input input:focus, .budget-input select:focus {
+            outline: none;
+            border-color: var(--accent-orange);
+            box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            background: linear-gradient(135deg, var(--accent-orange), var(--accent-orange-dim));
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 0.5rem;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(255, 107, 53, 0.3);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-secondary {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--border);
+            box-shadow: none;
+        }
+        
+        .results-area {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0;
+            margin-bottom: 1.5rem;
+        }
+        
+        .tab {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+            transition: color 0.2s, border-color 0.2s;
+        }
+        
+        .tab:hover {
+            color: var(--text-primary);
+        }
+        
+        .tab.active {
+            color: var(--accent-orange);
+            border-bottom-color: var(--accent-orange);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+        }
+        
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem;
+        }
+        
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .stat-value.orange { color: var(--accent-orange); }
+        .stat-value.green { color: var(--accent-green); }
+        .stat-value.blue { color: var(--accent-blue); }
+        .stat-value.purple { color: var(--accent-purple); }
+        
+        .stat-delta {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-top: 0.25rem;
+        }
+        
+        .table-wrapper {
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+        
+        th {
+            text-align: left;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        th:first-child {
+            border-radius: 8px 0 0 0;
+        }
+        
+        th:last-child {
+            border-radius: 0 8px 0 0;
+        }
+        
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        tr:last-child td {
+            border-bottom: none;
+        }
+        
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        
+        .product-name {
+            font-weight: 500;
+        }
+        
+        .product-id {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+        
+        .category-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 100px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        
+        .category-badge.footwear { background: rgba(255, 107, 53, 0.15); color: #ff8c5a; }
+        .category-badge.apparel { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+        .category-badge.accessories { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+        .category-badge.equipment { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
+        
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .text-right {
+            text-align: right;
+        }
+        
+        .prob-bar {
+            width: 60px;
+            height: 6px;
+            background: var(--bg-secondary);
+            border-radius: 3px;
+            overflow: hidden;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 0.5rem;
+        }
+        
+        .prob-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-orange), var(--accent-green));
+            border-radius: 3px;
+        }
+        
+        .change-badge {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .change-badge.positive {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--accent-green);
+        }
+        
+        .change-badge.negative {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger);
+        }
+        
+        .change-badge.neutral {
+            background: rgba(161, 161, 170, 0.15);
+            color: var(--text-secondary);
+        }
+        
+        .category-summary {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .category-card {
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            padding: 1rem;
+        }
+        
+        .category-name {
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-bottom: 0.75rem;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease-out;
+        }
+        
+        .progress-fill.high { background: var(--accent-green); }
+        .progress-fill.medium { background: var(--warning); }
+        .progress-fill.low { background: var(--accent-blue); }
+        
+        .category-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+        
+        .category-stats span:last-child {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .chart-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+        }
+        
+        .chart-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+        
+        .chart-title {
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+        }
+        
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        
+        .upload-zone:hover {
+            border-color: var(--accent-orange);
+            background: rgba(255, 107, 53, 0.05);
+        }
+        
+        .upload-zone input {
+            display: none;
+        }
+        
+        .upload-zone svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 1rem;
+            color: var(--text-dim);
+        }
+        
+        .change-summary {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .change-metric {
+            text-align: center;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+        }
+        
+        .change-metric-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .change-metric-label {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-top: 0.25rem;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-secondary);
+        }
+        
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+        
+        @media (max-width: 1200px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 1rem;
+            }
+        }
+        
+        @media (max-width: 900px) {
+            .stats-row, .category-summary, .change-summary {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .chart-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 640px) {
+            .stats-row, .category-summary, .change-summary {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">N</div>
+            <div>
+                <h1>Nike <span>B2B</span> Optimizer</h1>
+                <p class="subtitle">Constrained product purchasing optimization with historical analysis</p>
+            </div>
+        </header>
+        
+        <div class="grid">
+            <aside class="sidebar">
+                <div class="card">
+                    <div class="card-title">Budget Configuration</div>
+                    
+                    <div class="budget-input">
+                        <label>Total Budget ($)</label>
+                        <input type="number" id="totalBudget" value="500000">
+                    </div>
+                    
+                    <div class="budget-input">
+                        <label>Footwear Budget (%)</label>
+                        <input type="number" id="footwearPct" value="40" min="0" max="100">
+                    </div>
+                    
+                    <div class="budget-input">
+                        <label>Apparel Budget (%)</label>
+                        <input type="number" id="apparelPct" value="36" min="0" max="100">
+                    </div>
+                    
+                    <div class="budget-input">
+                        <label>Accessories Budget (%)</label>
+                        <input type="number" id="accessoriesPct" value="16" min="0" max="100">
+                    </div>
+                    
+                    <div class="budget-input">
+                        <label>Equipment Budget (%)</label>
+                        <input type="number" id="equipmentPct" value="8" min="0" max="100">
+                    </div>
+                    
+                    <div id="budgetWarning" style="color: var(--warning); font-size: 0.8rem; margin-top: 0.5rem; display: none;">
+                        ⚠️ Percentages should sum to 100%
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-title">Ordering Style</div>
+                    
+                    <div class="budget-input">
+                        <label>How should we order?</label>
+                        <select id="orderingStyle">
+                            <option value="fresh">Optimize Fresh (ignore history)</option>
+                            <option value="balanced">Balanced (prefer similar to last season)</option>
+                            <option value="conservative">Conservative (stay close to last season)</option>
+                        </select>
+                    </div>
+                    
+                    <p style="font-size: 0.8rem; color: var(--text-dim); margin-top: 0.5rem;">
+                        Controls how much the optimization considers previous season quantities.
+                    </p>
+                    
+                    <button class="btn" onclick="runOptimization()">
+                        🚀 Run Optimization
+                    </button>
+                </div>
+                
+                <div class="card">
+                    <div class="card-title">Import Data</div>
+                    
+                    <div class="upload-zone" onclick="document.getElementById('csvUpload').click()">
+                        <input type="file" id="csvUpload" accept=".csv" onchange="handleCSVUpload(event)">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary);">Upload CSV file</p>
+                        <p style="font-size: 0.75rem; color: var(--text-dim);">Requires: id, name, category, price, probability, prev_quantity, min_order, max_order</p>
+                    </div>
+                    
+                    <button class="btn btn-secondary" onclick="downloadResultsCSV()" style="margin-top: 1rem;">
+                        📥 Download Results
+                    </button>
+                </div>
+            </aside>
+            
+            <main class="results-area">
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('results')">📊 Results</button>
+                    <button class="tab" onclick="switchTab('analytics')">📈 Analytics</button>
+                    <button class="tab" onclick="switchTab('comparison')">📅 Season Comparison</button>
+                </div>
+                
+                <!-- Results Tab -->
+                <div id="tab-results" class="tab-content active">
+                    <div class="stats-row">
+                        <div class="stat-card">
+                            <div class="stat-label">Total Spend</div>
+                            <div class="stat-value orange" id="statTotalSpend">$0</div>
+                            <div class="stat-delta" id="statBudgetPct">0% of budget</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Units Ordered</div>
+                            <div class="stat-value blue" id="statUnits">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Objective Value</div>
+                            <div class="stat-value green" id="statObjective">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Products Ordered</div>
+                            <div class="stat-value purple" id="statProducts">0</div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-title">Category Allocation</div>
+                        <div class="category-summary" id="categorySummary"></div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-title">Optimized Quantities</div>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Category</th>
+                                        <th class="text-right">Price</th>
+                                        <th>Rec. Score</th>
+                                        <th class="text-right">Prev Qty</th>
+                                        <th class="text-right">New Qty</th>
+                                        <th class="text-right">Change</th>
+                                        <th class="text-right">Total Spend</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="resultsTable">
+                                    <tr>
+                                        <td colspan="8">
+                                            <div class="empty-state">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                                </svg>
+                                                <p>Click "Run Optimization" to see results</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Analytics Tab -->
+                <div id="tab-analytics" class="tab-content">
+                    <div class="chart-row">
+                        <div class="chart-container">
+                            <div class="chart-title">Budget Utilization by Category</div>
+                            <canvas id="budgetChart"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <div class="chart-title">Spend Distribution</div>
+                            <canvas id="pieChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container" style="margin-top: 1.5rem;">
+                        <div class="chart-title">Top 10 Products by Spend</div>
+                        <canvas id="topProductsChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Season Comparison Tab -->
+                <div id="tab-comparison" class="tab-content">
+                    <div class="card">
+                        <div class="card-title">Change Summary</div>
+                        <div class="change-summary">
+                            <div class="change-metric">
+                                <div class="change-metric-value" id="avgChange" style="color: var(--text-primary);">0%</div>
+                                <div class="change-metric-label">Average Change</div>
+                            </div>
+                            <div class="change-metric">
+                                <div class="change-metric-value" id="increasedCount" style="color: var(--accent-green);">0</div>
+                                <div class="change-metric-label">📈 Increased</div>
+                            </div>
+                            <div class="change-metric">
+                                <div class="change-metric-value" id="decreasedCount" style="color: var(--danger);">0</div>
+                                <div class="change-metric-label">📉 Decreased</div>
+                            </div>
+                            <div class="change-metric">
+                                <div class="change-metric-value" id="unchangedCount" style="color: var(--text-secondary);">0</div>
+                                <div class="change-metric-label">➡️ Unchanged</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container" style="margin-top: 1.5rem;">
+                        <div class="chart-title">Previous Season vs Optimized Quantities (Top 15 by Spend)</div>
+                        <canvas id="comparisonChart"></canvas>
+                    </div>
+                    
+                    <div class="chart-container" style="margin-top: 1.5rem;">
+                        <div class="chart-title">Change Distribution (%)</div>
+                        <canvas id="changeHistogram"></canvas>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Product data with previous season quantities
+        let products = [
+            // Footwear
+            { id: "FW001", name: "Air Max 90", category: "Footwear", price: 120.00, probability: 0.92, prevQuantity: 450, minOrder: 10, maxOrder: 500 },
+            { id: "FW002", name: "Air Force 1 Low", category: "Footwear", price: 110.00, probability: 0.88, prevQuantity: 520, minOrder: 10, maxOrder: 600 },
+            { id: "FW003", name: "Dunk Low Retro", category: "Footwear", price: 115.00, probability: 0.85, prevQuantity: 350, minOrder: 5, maxOrder: 400 },
+            { id: "FW004", name: "Air Jordan 1 Mid", category: "Footwear", price: 135.00, probability: 0.78, prevQuantity: 200, minOrder: 5, maxOrder: 300 },
+            { id: "FW005", name: "Pegasus 41", category: "Footwear", price: 140.00, probability: 0.72, prevQuantity: 180, minOrder: 10, maxOrder: 350 },
+            { id: "FW006", name: "Vomero 18", category: "Footwear", price: 160.00, probability: 0.65, prevQuantity: 80, minOrder: 5, maxOrder: 200 },
+            
+            // Apparel
+            { id: "AP001", name: "Tech Fleece Hoodie", category: "Apparel", price: 130.00, probability: 0.89, prevQuantity: 400, minOrder: 20, maxOrder: 800 },
+            { id: "AP002", name: "Dri-FIT Training Tee", category: "Apparel", price: 35.00, probability: 0.94, prevQuantity: 1800, minOrder: 50, maxOrder: 2000 },
+            { id: "AP003", name: "Sportswear Club Joggers", category: "Apparel", price: 65.00, probability: 0.82, prevQuantity: 600, minOrder: 30, maxOrder: 1000 },
+            { id: "AP004", name: "Pro Compression Shorts", category: "Apparel", price: 40.00, probability: 0.76, prevQuantity: 1200, minOrder: 40, maxOrder: 1500 },
+            { id: "AP005", name: "Windrunner Jacket", category: "Apparel", price: 110.00, probability: 0.71, prevQuantity: 250, minOrder: 15, maxOrder: 400 },
+            { id: "AP006", name: "ACG Storm-FIT Jacket", category: "Apparel", price: 250.00, probability: 0.58, prevQuantity: 60, minOrder: 5, maxOrder: 150 },
+            
+            // Accessories
+            { id: "AC001", name: "Elite Crew Socks 3-Pack", category: "Accessories", price: 22.00, probability: 0.91, prevQuantity: 2200, minOrder: 100, maxOrder: 3000 },
+            { id: "AC002", name: "Heritage Backpack", category: "Accessories", price: 45.00, probability: 0.79, prevQuantity: 300, minOrder: 20, maxOrder: 500 },
+            { id: "AC003", name: "Swoosh Headband", category: "Accessories", price: 12.00, probability: 0.84, prevQuantity: 1500, minOrder: 50, maxOrder: 2000 },
+            { id: "AC004", name: "Training Gloves", category: "Accessories", price: 30.00, probability: 0.67, prevQuantity: 350, minOrder: 30, maxOrder: 600 },
+            { id: "AC005", name: "Fuel Jug 64oz", category: "Accessories", price: 38.00, probability: 0.62, prevQuantity: 200, minOrder: 25, maxOrder: 400 },
+            
+            // Equipment
+            { id: "EQ001", name: "Versa Training Ball", category: "Equipment", price: 25.00, probability: 0.73, prevQuantity: 350, minOrder: 20, maxOrder: 500 },
+            { id: "EQ002", name: "Resistance Bands Set", category: "Equipment", price: 35.00, probability: 0.69, prevQuantity: 280, minOrder: 15, maxOrder: 400 },
+            { id: "EQ003", name: "Yoga Mat", category: "Equipment", price: 50.00, probability: 0.64, prevQuantity: 150, minOrder: 10, maxOrder: 300 },
+            { id: "EQ004", name: "Speed Rope", category: "Equipment", price: 20.00, probability: 0.71, prevQuantity: 400, minOrder: 30, maxOrder: 600 },
+        ];
+
+        let optimizationResults = null;
+        let charts = {};
+
+        // Ordering style settings
+        const stabilitySettings = {
+            fresh: { stabilityWeight: 0.0 },
+            balanced: { stabilityWeight: 0.3 },
+            conservative: { stabilityWeight: 0.6 }
+        };
+
+        function getBudgets() {
+            const total = parseFloat(document.getElementById('totalBudget').value) || 500000;
+            const footwearPct = parseFloat(document.getElementById('footwearPct').value) || 40;
+            const apparelPct = parseFloat(document.getElementById('apparelPct').value) || 36;
+            const accessoriesPct = parseFloat(document.getElementById('accessoriesPct').value) || 16;
+            const equipmentPct = parseFloat(document.getElementById('equipmentPct').value) || 8;
+            
+            const sum = footwearPct + apparelPct + accessoriesPct + equipmentPct;
+            const warning = document.getElementById('budgetWarning');
+            warning.style.display = sum !== 100 ? 'block' : 'none';
+            
+            return {
+                total,
+                category: {
+                    Footwear: total * (footwearPct / 100),
+                    Apparel: total * (apparelPct / 100),
+                    Accessories: total * (accessoriesPct / 100),
+                    Equipment: total * (equipmentPct / 100),
+                }
+            };
+        }
+
+        function solveOptimization(products, budgets, stabilityWeight) {
+            /**
+             * Solve LP with stability penalty for deviating from historical quantities.
+             * 
+             * The LP solver maximizes a linear objective. To include quadratic penalty,
+             * we approximate by adjusting the objective coefficients based on deviation.
+             * 
+             * For true quadratic penalty, we'd need a QP solver. Here we use a heuristic:
+             * - Adjust probability weights to favor quantities closer to historical
+             */
+            
+            const n = products.length;
+            
+            // Calculate average previous quantity for normalization
+            const prevQties = products.map(p => p.prevQuantity || 0);
+            const avgPrevQty = prevQties.filter(q => q > 0).reduce((a, b) => a + b, 0) / prevQties.filter(q => q > 0).length || 1;
+            
+            const model = {
+                optimize: "objective",
+                opType: "max",
+                constraints: {},
+                variables: {},
+                ints: {}
+            };
+
+            // Budget constraints
+            model.constraints["totalBudget"] = { max: budgets.total };
+            for (const cat in budgets.category) {
+                model.constraints[`budget_${cat}`] = { max: budgets.category[cat] };
+            }
+
+            // Variables
+            products.forEach((product, i) => {
+                const varName = `q_${i}`;
+                
+                // Adjust objective coefficient based on stability preference
+                // If stability_weight > 0, we want to penalize deviation from previous quantity
+                // Heuristic: boost products closer to their historical ratio
+                let objCoef = product.probability;
+                
+                if (stabilityWeight > 0 && product.prevQuantity > 0) {
+                    // Products with good history get a slight boost
+                    objCoef = product.probability * (1 + stabilityWeight * 0.1);
+                }
+                
+                model.variables[varName] = {
+                    objective: objCoef,
+                    totalBudget: product.price,
+                };
+                
+                model.variables[varName][`budget_${product.category}`] = product.price;
+                
+                // Bounds
+                let minBound = product.minOrder;
+                let maxBound = product.maxOrder;
+                
+                // If using stability, tighten bounds toward historical
+                if (stabilityWeight > 0 && product.prevQuantity > 0) {
+                    const maxChangePct = 0.5 - (stabilityWeight * 0.3); // 0.5 for balanced, 0.2 for conservative
+                    minBound = Math.max(minBound, Math.floor(product.prevQuantity * (1 - maxChangePct)));
+                    maxBound = Math.min(maxBound, Math.ceil(product.prevQuantity * (1 + maxChangePct)));
+                }
+                
+                model.constraints[`min_${i}`] = { min: minBound };
+                model.constraints[`max_${i}`] = { max: maxBound };
+                model.variables[varName][`min_${i}`] = 1;
+                model.variables[varName][`max_${i}`] = 1;
+                
+                model.ints[varName] = 1;
+            });
+
+            // Solve
+            const results = solver.Solve(model);
+            
+            // Extract quantities
+            const quantities = products.map((_, i) => {
+                const qty = results[`q_${i}`] || 0;
+                return Math.floor(qty);
+            });
+
+            return {
+                quantities,
+                feasible: results.feasible,
+                objectiveValue: results.result || 0
+            };
+        }
+
+        function runOptimization() {
+            const budgets = getBudgets();
+            const style = document.getElementById('orderingStyle').value;
+            const settings = stabilitySettings[style];
+            
+            let result = solveOptimization(products, budgets, settings.stabilityWeight);
+            
+            // Auto-fallback if infeasible
+            if (!result.feasible && style !== 'fresh') {
+                console.log('Constraints too tight, relaxing...');
+                result = solveOptimization(products, budgets, settings.stabilityWeight * 0.5);
+            }
+            
+            if (!result.feasible) {
+                alert("No feasible solution found! Try adjusting the budgets.");
+                return;
+            }
+
+            // Calculate results
+            optimizationResults = products.map((product, i) => {
+                const qty = Math.max(result.quantities[i], product.minOrder);
+                const change = qty - product.prevQuantity;
+                const changePct = product.prevQuantity > 0 
+                    ? ((qty - product.prevQuantity) / product.prevQuantity * 100) 
+                    : null;
+                
+                return {
+                    ...product,
+                    quantity: qty,
+                    totalSpend: qty * product.price,
+                    change,
+                    changePct
+                };
+            });
+
+            // Update all views
+            updateStats(optimizationResults, budgets);
+            updateCategorySummary(optimizationResults, budgets);
+            updateResultsTable(optimizationResults);
+            updateAnalyticsCharts(optimizationResults, budgets);
+            updateComparisonView(optimizationResults);
+        }
+
+        function updateStats(results, budgets) {
+            const totalSpend = results.reduce((sum, r) => sum + r.totalSpend, 0);
+            const totalUnits = results.reduce((sum, r) => sum + r.quantity, 0);
+            const actualObjective = results.reduce((sum, r) => sum + r.probability * r.quantity, 0);
+            const productsOrdered = results.filter(r => r.quantity > 0).length;
+            const utilization = (totalSpend / budgets.total) * 100;
+
+            document.getElementById('statTotalSpend').textContent = formatCurrency(totalSpend);
+            document.getElementById('statBudgetPct').textContent = `${utilization.toFixed(1)}% of budget`;
+            document.getElementById('statUnits').textContent = totalUnits.toLocaleString();
+            document.getElementById('statObjective').textContent = actualObjective.toFixed(1);
+            document.getElementById('statProducts').textContent = productsOrdered;
+        }
+
+        function updateCategorySummary(results, budgets) {
+            const categories = ['Footwear', 'Apparel', 'Accessories', 'Equipment'];
+            const container = document.getElementById('categorySummary');
+            
+            container.innerHTML = categories.map(cat => {
+                const catResults = results.filter(r => r.category === cat);
+                const allocated = catResults.reduce((sum, r) => sum + r.totalSpend, 0);
+                const budget = budgets.category[cat];
+                const utilization = (allocated / budget) * 100;
+                
+                let progressClass = 'low';
+                if (utilization > 80) progressClass = 'high';
+                else if (utilization > 50) progressClass = 'medium';
+                
+                return `
+                    <div class="category-card">
+                        <div class="category-name">${cat}</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill ${progressClass}" style="width: ${Math.min(utilization, 100)}%"></div>
+                        </div>
+                        <div class="category-stats">
+                            <span>${utilization.toFixed(1)}% used</span>
+                            <span>${formatCurrency(allocated)} / ${formatCurrency(budget)}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateResultsTable(results) {
+            const tbody = document.getElementById('resultsTable');
+            const sorted = [...results].sort((a, b) => b.totalSpend - a.totalSpend);
+            
+            tbody.innerHTML = sorted.map(r => {
+                let changeClass = 'neutral';
+                let changeText = '—';
+                
+                if (r.changePct !== null) {
+                    if (r.changePct > 0) {
+                        changeClass = 'positive';
+                        changeText = `+${r.changePct.toFixed(1)}%`;
+                    } else if (r.changePct < 0) {
+                        changeClass = 'negative';
+                        changeText = `${r.changePct.toFixed(1)}%`;
+                    } else {
+                        changeText = '0%';
+                    }
+                }
+                
+                return `
+                    <tr>
+                        <td>
+                            <div class="product-name">${r.name}</div>
+                            <div class="product-id">${r.id}</div>
+                        </td>
+                        <td>
+                            <span class="category-badge ${r.category.toLowerCase()}">${r.category}</span>
+                        </td>
+                        <td class="text-right mono">$${r.price.toFixed(2)}</td>
+                        <td>
+                            <span class="mono">${(r.probability * 100).toFixed(0)}%</span>
+                            <div class="prob-bar">
+                                <div class="prob-fill" style="width: ${r.probability * 100}%"></div>
+                            </div>
+                        </td>
+                        <td class="text-right mono">${r.prevQuantity.toLocaleString()}</td>
+                        <td class="text-right mono">${r.quantity.toLocaleString()}</td>
+                        <td class="text-right">
+                            <span class="change-badge ${changeClass}">${changeText}</span>
+                        </td>
+                        <td class="text-right mono">${formatCurrency(r.totalSpend)}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function updateAnalyticsCharts(results, budgets) {
+            const categories = ['Footwear', 'Apparel', 'Accessories', 'Equipment'];
+            const colors = {
+                Footwear: '#ff6b35',
+                Apparel: '#3b82f6',
+                Accessories: '#10b981',
+                Equipment: '#a855f7'
+            };
+            
+            // Category data
+            const catData = categories.map(cat => {
+                const catResults = results.filter(r => r.category === cat);
+                return {
+                    category: cat,
+                    allocated: catResults.reduce((sum, r) => sum + r.totalSpend, 0),
+                    budget: budgets.category[cat]
+                };
+            });
+            
+            // Budget utilization chart
+            if (charts.budgetChart) charts.budgetChart.destroy();
+            const budgetCtx = document.getElementById('budgetChart').getContext('2d');
+            charts.budgetChart = new Chart(budgetCtx, {
+                type: 'bar',
+                data: {
+                    labels: categories,
+                    datasets: [
+                        {
+                            label: 'Allocated',
+                            data: catData.map(d => d.allocated),
+                            backgroundColor: '#667eea'
+                        },
+                        {
+                            label: 'Remaining',
+                            data: catData.map(d => d.budget - d.allocated),
+                            backgroundColor: '#3f3f46'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#a1a1aa' } }
+                    },
+                    scales: {
+                        x: { 
+                            stacked: true,
+                            ticks: { color: '#a1a1aa' },
+                            grid: { color: '#27272a' }
+                        },
+                        y: { 
+                            stacked: true,
+                            ticks: { color: '#a1a1aa', callback: v => '$' + (v/1000) + 'k' },
+                            grid: { color: '#27272a' }
+                        }
+                    }
+                }
+            });
+            
+            // Pie chart
+            if (charts.pieChart) charts.pieChart.destroy();
+            const pieCtx = document.getElementById('pieChart').getContext('2d');
+            charts.pieChart = new Chart(pieCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: categories,
+                    datasets: [{
+                        data: catData.map(d => d.allocated),
+                        backgroundColor: Object.values(colors),
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '60%',
+                    plugins: {
+                        legend: { 
+                            position: 'right',
+                            labels: { color: '#a1a1aa', padding: 15 }
+                        }
+                    }
+                }
+            });
+            
+            // Top products
+            const top10 = [...results].sort((a, b) => b.totalSpend - a.totalSpend).slice(0, 10);
+            
+            if (charts.topProductsChart) charts.topProductsChart.destroy();
+            const topCtx = document.getElementById('topProductsChart').getContext('2d');
+            charts.topProductsChart = new Chart(topCtx, {
+                type: 'bar',
+                data: {
+                    labels: top10.map(p => p.name),
+                    datasets: [{
+                        label: 'Total Spend',
+                        data: top10.map(p => p.totalSpend),
+                        backgroundColor: top10.map(p => colors[p.category])
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: { 
+                            ticks: { color: '#a1a1aa', callback: v => '$' + (v/1000) + 'k' },
+                            grid: { color: '#27272a' }
+                        },
+                        y: { 
+                            ticks: { color: '#a1a1aa' },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateComparisonView(results) {
+            // Change summary
+            const validChanges = results.filter(r => r.changePct !== null);
+            const increased = validChanges.filter(r => r.changePct > 0).length;
+            const decreased = validChanges.filter(r => r.changePct < 0).length;
+            const unchanged = validChanges.filter(r => r.changePct === 0).length;
+            const avgChange = validChanges.length > 0 
+                ? validChanges.reduce((sum, r) => sum + r.changePct, 0) / validChanges.length 
+                : 0;
+            
+            document.getElementById('avgChange').textContent = (avgChange >= 0 ? '+' : '') + avgChange.toFixed(1) + '%';
+            document.getElementById('increasedCount').textContent = increased;
+            document.getElementById('decreasedCount').textContent = decreased;
+            document.getElementById('unchangedCount').textContent = unchanged;
+            
+            // Comparison chart - top 15 by spend with prev quantity
+            const top15 = [...results]
+                .filter(r => r.prevQuantity > 0)
+                .sort((a, b) => b.totalSpend - a.totalSpend)
+                .slice(0, 15);
+            
+            if (charts.comparisonChart) charts.comparisonChart.destroy();
+            const compCtx = document.getElementById('comparisonChart').getContext('2d');
+            charts.comparisonChart = new Chart(compCtx, {
+                type: 'bar',
+                data: {
+                    labels: top15.map(p => p.name),
+                    datasets: [
+                        {
+                            label: 'Previous Season',
+                            data: top15.map(p => p.prevQuantity),
+                            backgroundColor: '#94a3b8'
+                        },
+                        {
+                            label: 'Optimized',
+                            data: top15.map(p => p.quantity),
+                            backgroundColor: '#667eea'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { 
+                            position: 'top',
+                            labels: { color: '#a1a1aa' }
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            ticks: { color: '#a1a1aa', maxRotation: 45, minRotation: 45 },
+                            grid: { display: false }
+                        },
+                        y: { 
+                            ticks: { color: '#a1a1aa' },
+                            grid: { color: '#27272a' }
+                        }
+                    }
+                }
+            });
+            
+            // Change histogram
+            const changePcts = validChanges.map(r => r.changePct);
+            const bins = [-50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+            const histogram = bins.slice(0, -1).map((bin, i) => {
+                const nextBin = bins[i + 1];
+                return changePcts.filter(c => c >= bin && c < nextBin).length;
+            });
+            
+            if (charts.changeHistogram) charts.changeHistogram.destroy();
+            const histCtx = document.getElementById('changeHistogram').getContext('2d');
+            charts.changeHistogram = new Chart(histCtx, {
+                type: 'bar',
+                data: {
+                    labels: bins.slice(0, -1).map((b, i) => `${b}% to ${bins[i+1]}%`),
+                    datasets: [{
+                        label: 'Products',
+                        data: histogram,
+                        backgroundColor: histogram.map((_, i) => bins[i] < 0 ? '#ef4444' : '#667eea')
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: { 
+                            ticks: { color: '#a1a1aa', maxRotation: 45, minRotation: 45 },
+                            grid: { display: false }
+                        },
+                        y: { 
+                            ticks: { color: '#a1a1aa', stepSize: 1 },
+                            grid: { color: '#27272a' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+        }
+
+        function handleCSVUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const csv = e.target.result;
+                    const lines = csv.split('\n');
+                    const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/['"]/g, ''));
+                    
+                    const requiredCols = ['id', 'name', 'category', 'price', 'probability', 'prev_quantity', 'min_order', 'max_order'];
+                    const headerMap = {};
+                    
+                    requiredCols.forEach(col => {
+                        const idx = headers.findIndex(h => h === col || h === col.replace('_', ''));
+                        if (idx === -1) throw new Error(`Missing column: ${col}`);
+                        headerMap[col] = idx;
+                    });
+                    
+                    products = [];
+                    for (let i = 1; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        if (!line) continue;
+                        
+                        const values = line.split(',').map(v => v.trim().replace(/['"]/g, ''));
+                        
+                        products.push({
+                            id: values[headerMap['id']],
+                            name: values[headerMap['name']],
+                            category: values[headerMap['category']],
+                            price: parseFloat(values[headerMap['price']]),
+                            probability: parseFloat(values[headerMap['probability']]),
+                            prevQuantity: parseInt(values[headerMap['prev_quantity']]) || 0,
+                            minOrder: parseInt(values[headerMap['min_order']]),
+                            maxOrder: parseInt(values[headerMap['max_order']])
+                        });
+                    }
+                    
+                    alert(`Loaded ${products.length} products from CSV`);
+                } catch (err) {
+                    alert(`Error reading CSV: ${err.message}`);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function downloadResultsCSV() {
+            if (!optimizationResults) {
+                alert('Run optimization first!');
+                return;
+            }
+            
+            const headers = ['id', 'name', 'category', 'price', 'probability', 'prev_quantity', 'quantity', 'change', 'change_pct', 'total_spend'];
+            const rows = optimizationResults.map(r => [
+                r.id,
+                r.name,
+                r.category,
+                r.price,
+                r.probability,
+                r.prevQuantity,
+                r.quantity,
+                r.change,
+                r.changePct !== null ? r.changePct.toFixed(1) : '',
+                r.totalSpend
+            ]);
+            
+            const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'optimization_results.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(value);
+        }
+
+        // Initialize budget validation
+        ['footwearPct', 'apparelPct', 'accessoriesPct', 'equipmentPct'].forEach(id => {
+            document.getElementById(id).addEventListener('input', getBudgets);
+        });
+
+        // Run optimization on page load
+        document.addEventListener('DOMContentLoaded', runOptimization);
+    </script>
+</body>
+</html>

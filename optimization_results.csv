@@ -1,0 +1,22 @@
+Product ID,Product Name,Category,Unit Price,Rec. Probability,Quantity,Total Spend
+FW001,Air Max 90,Footwear,120.0,0.92,499,59880.0
+FW002,Air Force 1 Low,Footwear,110.0,0.88,599,65890.0
+FW003,Dunk Low Retro,Footwear,115.0,0.85,399,45885.0
+FW004,Air Jordan 1 Mid,Footwear,135.0,0.78,191,25785.0
+FW005,Pegasus 41,Footwear,140.0,0.72,10,1400.0
+FW006,Vomero 18,Footwear,160.0,0.65,5,800.0
+AP001,Tech Fleece Hoodie,Apparel,130.0,0.89,20,2600.0
+AP002,Dri-FIT Training Tee,Apparel,35.0,0.94,1999,69965.0
+AP003,Sportswear Club Joggers,Apparel,65.0,0.82,684,44460.0
+AP004,Pro Compression Shorts,Apparel,40.0,0.76,1499,59960.0
+AP005,Windrunner Jacket,Apparel,110.0,0.71,15,1650.0
+AP006,ACG Storm-FIT Jacket,Apparel,250.0,0.58,5,1250.0
+AC001,Elite Crew Socks 3-Pack,Accessories,22.0,0.91,2420,53240.0
+AC002,Heritage Backpack,Accessories,45.0,0.79,20,900.0
+AC003,Swoosh Headband,Accessories,12.0,0.84,1999,23988.0
+AC004,Training Gloves,Accessories,30.0,0.67,30,900.0
+AC005,Fuel Jug 64oz,Accessories,38.0,0.62,25,950.0
+EQ001,Versa Training Ball,Equipment,25.0,0.73,499,12475.0
+EQ002,Resistance Bands Set,Equipment,35.0,0.69,399,13965.0
+EQ003,Yoga Mat,Equipment,50.0,0.64,30,1500.0
+EQ004,Speed Rope,Equipment,20.0,0.71,599,11980.0
